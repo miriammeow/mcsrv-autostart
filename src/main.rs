@@ -5,6 +5,9 @@ use std::fs;
 use std::fs::File;
 use yaml_rust2::{YamlLoader};
 use std::process::Command;
+use std::process::exit;
+use std::thread;
+use std::time::Duration;
 
 const DEFAULT_CONFIG: &str = 
 "config:
@@ -23,7 +26,7 @@ fn assure_config() -> Result<(), Error> {
     Ok(())
 }
 
-fn fake_response(stream: &mut TcpStream, script_path_str: &str) -> Result<(), Error> {
+fn fake_response(stream: &mut TcpStream, script_path_str: &str, address: &str, port: u32) -> Result<(), Error> {
 
     let mut buf: [u8; 128] = [0; 128];
     stream.read(&mut buf)?;
@@ -35,7 +38,7 @@ fn fake_response(stream: &mut TcpStream, script_path_str: &str) -> Result<(), Er
 
         if buf[16] == 2 {
             print!(" Login attempt detected!\n");
-            start_script(script_path_str)?;
+            start_script(script_path_str, address, port)?;
             return Ok(());
         }
 
@@ -47,7 +50,7 @@ fn fake_response(stream: &mut TcpStream, script_path_str: &str) -> Result<(), Er
     Ok(())
 }
 
-fn start_script(script_path_str: &str) -> Result<(), Error> {
+fn start_script(script_path_str: &str, address: &str, port: u32) -> Result<(), Error> {
     if !fs::exists(script_path_str)? {
         let file_content = "echo Your script didn't exist so I created it :3".as_bytes();
         let mut file = File::create(script_path_str)?;
@@ -56,6 +59,21 @@ fn start_script(script_path_str: &str) -> Result<(), Error> {
 
     Command::new("chmod").arg("+x").arg(format!("{script_path_str}")).output()?;
     Command::new("bash").arg(format!("{script_path_str}")).output()?;
+
+    println!("Start script!");
+
+    let mut stay_a_bit = true;
+    while stay_a_bit {
+        thread::sleep(Duration::from_secs(10));
+
+        let address = format!("{address}:{port}");
+        match TcpStream::connect_timeout(&address.parse().unwrap(), Duration::from_secs(3)) {
+            Ok(_) => ()
+            Err(_) => stay_a_bit = false
+        }
+
+    }
+    
     Ok(())
 }
 
@@ -77,7 +95,7 @@ fn main() -> Result<(), Error> {
     println!("Listening on {address}:{port} . . .");
 
     for stream in listener.incoming() {
-        fake_response(&mut stream?, script)?;
+        fake_response(&mut stream?, script, address, port)?;
     }
 
     Ok(())
