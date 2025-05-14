@@ -3,7 +3,7 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::fs;
 use std::fs::File;
-use yaml_rust2::{YamlLoader, YamlEmitter};
+use yaml_rust2::{YamlLoader};
 
 const default_config: &str = 
 "config:
@@ -22,15 +22,33 @@ fn assure_config() -> Result<(), Error> {
     Ok(())
 }
 
-fn fake_response() -> Result<(), Error> {
-    
-}
-
-fn start_script() -> Result<(), Error> {
+fn fake_response(stream: &mut TcpStream) -> Result<(), Error> {
 
     let mut buf: [u8; 128] = [0; 128];
     stream.read(&mut buf)?;
 
+    //println!("{:?}", buf);
+
+    if buf[0] == 16 {
+        print!("Request received: ");
+
+        if buf[16] == 2 {
+            print!(" Login attempt detected!\n");
+            start_script()?;
+            return Ok(());
+        }
+
+        print!(" Something else!\n");
+    }
+
+    
+
+    Ok(())
+
+}
+
+fn start_script() -> Result<(), Error> {
+    println!("I got started :3");
     Ok(())
 }
 
@@ -62,9 +80,7 @@ fn main() -> Result<(), Error> {
     println!("Listening on {address}:{port} . . .");
 
     for stream in listener.incoming() {
-        println!("Request received! {counter}");
-        fake_response(stream?)?;
-        start_script()?;
+        fake_response(&mut stream?)?;
     }
 
     Ok(())
