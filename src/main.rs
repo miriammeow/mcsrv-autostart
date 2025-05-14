@@ -55,7 +55,7 @@ fn start_script(script_path_str: &str) -> Result<(), Error> {
     }
 
     Command::new("chmod").arg("+x").arg(format!("{script_path_str}")).output()?;
-    Command::new(format!("{script_path_str}")).output()?;
+    Command::new("bash").arg(format!("{script_path_str}")).output()?;
     Ok(())
 }
 
