@@ -68,7 +68,7 @@ fn start_script(script_path_str: &str, address: &str, port: u32) -> Result<(), E
 
         let address = format!("{address}:{port}");
         match TcpStream::connect_timeout(&address.parse().unwrap(), Duration::from_secs(3)) {
-            Ok(_) => ()
+            Ok(_) => (),
             Err(_) => stay_a_bit = false
         }
 
