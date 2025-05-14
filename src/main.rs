@@ -4,8 +4,9 @@ use std::net::{TcpListener, TcpStream};
 use std::fs;
 use std::fs::File;
 use yaml_rust2::{YamlLoader};
+use std::process::Command;
 
-const default_config: &str = 
+const DEFAULT_CONFIG: &str = 
 "config:
     - address: \"127.0.0.1\"
     - port: 25565
@@ -17,12 +18,12 @@ fn assure_config() -> Result<(), Error> {
     }
 
     let mut config_file = File::create("config.yaml")?;
-    config_file.write_all(default_config.as_bytes())?;
+    config_file.write_all(DEFAULT_CONFIG.as_bytes())?;
 
     Ok(())
 }
 
-fn fake_response(stream: &mut TcpStream) -> Result<(), Error> {
+fn fake_response(stream: &mut TcpStream, script_path_str: &str) -> Result<(), Error> {
 
     let mut buf: [u8; 128] = [0; 128];
     stream.read(&mut buf)?;
@@ -34,7 +35,7 @@ fn fake_response(stream: &mut TcpStream) -> Result<(), Error> {
 
         if buf[16] == 2 {
             print!(" Login attempt detected!\n");
-            start_script()?;
+            start_script(script_path_str)?;
             return Ok(());
         }
 
@@ -44,21 +45,17 @@ fn fake_response(stream: &mut TcpStream) -> Result<(), Error> {
     
 
     Ok(())
-
 }
 
-fn start_script() -> Result<(), Error> {
-    println!("I got started :3");
-    Ok(())
-}
+fn start_script(script_path_str: &str) -> Result<(), Error> {
+    if !fs::exists(script_path_str)? {
+        let file_content = "echo Your script didn't exist so I created it :3".as_bytes();
+        let mut file = File::create(script_path_str)?;
+        file.write_all(file_content)?;
+    }
 
-fn temp_test(mut stream: TcpStream) -> Result<(), Error> {
-
-    let mut buf: [u8; 128] = [0; 128];
-    stream.read(&mut buf)?;
-
-    println!("{:?}", buf);
-
+    Command::new("chmod").arg("+x").arg(format!("{script_path_str}")).output()?;
+    Command::new(format!("{script_path_str}")).output()?;
     Ok(())
 }
 
@@ -80,7 +77,7 @@ fn main() -> Result<(), Error> {
     println!("Listening on {address}:{port} . . .");
 
     for stream in listener.incoming() {
-        fake_response(&mut stream?)?;
+        fake_response(&mut stream?, script)?;
     }
 
     Ok(())

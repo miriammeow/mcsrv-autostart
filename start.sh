@@ -1,0 +1,1 @@
+echo Your script didn't exist so I created it :3
