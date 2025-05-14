@@ -10,7 +10,7 @@ const DEFAULT_CONFIG: &str =
 "config:
     - address: \"127.0.0.1\"
     - port: 25565
-    - script: \"start.sh\"";
+    - script: \"./start.sh\"";
 
 fn assure_config() -> Result<(), Error> {
     if fs::exists("config.yaml")? {
